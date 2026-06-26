@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MASUMX TRADE — Signal Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #060608;
+    --surface: #0e0e12;
+    --surface2: #16161c;
+    --border: #1e1e28;
+    --border2: #2a2a38;
+    --text: #f0f0f0;
+    --muted: #555566;
+    --gold1: #ffd700;
+    --gold2: #c8a200;
+    --silver: #c8c8d0;
+    --call: #00e676;
+    --put: #ff3d3d;
+  }
+
+  html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; -webkit-font-smoothing: antialiased; }
+
+  body::before {
+    content: '';
+    position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(ellipse, rgba(200,162,0,0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  body { display: flex; flex-direction: column; align-items: center; padding: 0 1rem 4rem; position: relative; z-index: 1; }
+
+  header {
+    width: 100%; max-width: 500px; text-align: center; padding: 2.5rem 0 2rem;
+  }
+  header::after {
+    content: ''; display: block; width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold2), transparent); margin-top: 2rem;
+  }
+
+  .logo-wrap { width: 90px; height: 90px; margin: 0 auto 1rem; }
+  .logo-svg { width: 90px; height: 90px; }
+
+  .brand-name {
+    font-size: 30px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+    background: linear-gradient(135deg, #ffd700, #c8a200, #ffd700);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1;
+  }
+  .brand-sub {
+    font-size: 14px; font-weight: 600; letter-spacing: 8px; color: var(--silver);
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .brand-sub::before, .brand-sub::after { content: '—'; color: var(--gold2); margin: 0 6px; }
+  .tagline { font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-top: 8px; font-family: 'Space Mono', monospace; }
+
+  .card {
+    width: 100%; max-width: 500px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 12px; position: relative;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+  }
+  .card-label { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold2); font-family: 'Space Mono', monospace; margin-bottom: 10px; }
+
+  /* Custom dropdown */
+  .custom-select-wrap { position: relative; width: 100%; }
+
+  .custom-select-trigger {
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: 10px;
+    padding: 0 16px; height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    user-select: none; gap: 12px;
+  }
+  .custom-select-trigger:hover { border-color: var(--gold3); background: #1c1c24; }
+  .custom-select-trigger.open { border-color: var(--gold2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+
+  .cst-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+  .asset-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold3), var(--gold2));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700;
+    color: #050505; flex-shrink: 0; letter-spacing: 0;
+  }
+
+  .cst-text { display: flex; flex-direction: column; min-width: 0; }
+  .cst-name { font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0.5px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cst-badge { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--gold2); letter-spacing: 1.5px; margin-top: 1px; }
+
+  .cst-arrow { flex-shrink: 0; transition: transform 0.2s; }
+  .custom-select-trigger.open .cst-arrow { transform: rotate(180deg); }
+
+  .custom-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+    background: #0e0e14; border: 1px solid var(--gold2); border-top: none;
+    border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+    max-height: 280px; overflow-y: auto; display: none;
+    scrollbar-width: thin; scrollbar-color: var(--gold3) transparent;
+  }
+  .custom-dropdown::-webkit-scrollbar { width: 4px; }
+  .custom-dropdown::-webkit-scrollbar-thumb { background: var(--gold3); border-radius: 2px; }
+  .custom-dropdown.open { display: block; }
+
+  .dd-search {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border2);
+    position: sticky; top: 0; background: #0e0e14; z-index: 1;
+  }
+  .dd-search input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 8px 12px; color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: 11px; outline: none;
+    letter-spacing: 1px;
+  }
+  .dd-search input::placeholder { color: var(--muted); }
+  .dd-search input:focus { border-color: var(--gold2); }
+
+  .dd-group-label {
+    padding: 8px 14px 4px;
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px;
+    color: var(--gold3); text-transform: uppercase;
+    border-top: 1px solid var(--border);
+  }
+  .dd-group-label:first-child { border-top: none; }
+
+  .dd-item {
+    padding: 0 14px; height: 48px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; transition: background 0.12s;
+  }
+  .dd-item:hover { background: rgba(200,162,0,0.07); }
+  .dd-item.selected { background: rgba(200,162,0,0.1); }
+  .dd-item.hidden { display: none; }
+
+  .dd-icon {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #1e1e28, #2a2a38);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700;
+    color: var(--gold2); letter-spacing: 0;
+  }
+  .dd-item-name { font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: 0.5px; flex: 1; }
+  .dd-item-tag { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+
+  .time-pills { display: flex; gap: 8px; }
+  .pill {
+    flex: 1; padding: 11px 8px; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 13px;
+    font-weight: 700; text-align: center; cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .pill.active { border-color: var(--gold2); color: var(--gold1); background: rgba(200,162,0,0.07); }
+
+  .btn-generate {
+    width: 100%; max-width: 500px; padding: 17px;
+    background: linear-gradient(135deg, #ffd700, #c8a200);
+    color: #050505; border: none; border-radius: 12px; font-family: 'Rajdhani', sans-serif;
+    font-size: 17px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-bottom: 12px;
+    position: relative; overflow: hidden;
+  }
+  .btn-generate::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-20deg); transition: left 0.45s;
+  }
+  .btn-generate:hover::after { left: 160%; }
+  .btn-generate:hover { opacity: 0.92; }
+  .btn-generate:active { transform: scale(0.985); }
+  .btn-generate:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-generate:disabled::after { display: none; }
+
+  .cooldown-bar-wrap { width: 100%; max-width: 500px; display: none; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+  .cooldown-text { font-size: 11px; color: var(--put); font-family: 'Space Mono', monospace; text-align: center; letter-spacing: 1.5px; }
+  .cooldown-track { height: 2px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+  .cooldown-fill { height: 100%; background: linear-gradient(90deg, var(--put), #ff8888); border-radius: 2px; width: 100%; transition: width 1s linear; }
+
+  .signal-result {
+    width: 100%; max-width: 500px; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 14px; padding: 2rem 1.5rem; text-align: center;
+    display: none; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 12px;
+    position: relative; overflow: hidden;
+  }
+  .signal-result::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--signal-color, var(--gold1)); }
+
+  .signal-direction { font-family: 'Rajdhani', sans-serif; font-size: 64px; font-weight: 700; color: var(--signal-color, var(--text)); line-height: 1; letter-spacing: 6px; }
+  .signal-arrow { font-size: 32px; line-height: 1; }
+  .signal-divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent); }
+  .signal-details { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .detail-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 7px 14px; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .detail-chip span { color: var(--text); font-weight: 700; font-size: 12px; }
+
+  .btn-telegram {
+    width: 100%; max-width: 500px; padding: 15px; background: transparent; color: #29a8e9;
+    border: 1px solid rgba(41,168,233,0.3); border-radius: 12px; font-family: 'Rajdhani', sans-serif;
+    font-size: 15px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s; text-decoration: none;
+    display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px;
+  }
+  .btn-telegram:hover { background: rgba(41,168,233,0.07); border-color: rgba(41,168,233,0.6); }
+
+  footer { width: 100%; max-width: 500px; text-align: center; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; letter-spacing: 1px; }
+  footer .gold { color: var(--gold2); }
+
+  /* Scrolling ticker */
+  .ticker-wrap {
+    width: 100%; background: rgba(200,162,0,0.07);
+    border-top: 1px solid rgba(200,162,0,0.2);
+    border-bottom: 1px solid rgba(200,162,0,0.2);
+    overflow: hidden; padding: 10px 0; margin-bottom: 1.2rem;
+    position: relative;
+  }
+  .ticker-wrap::before, .ticker-wrap::after {
+    content: ''; position: absolute; top: 0; bottom: 0; width: 60px; z-index: 2; pointer-events: none;
+  }
+  .ticker-wrap::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+  .ticker-wrap::after { right: 0; background: linear-gradient(-90deg, var(--bg), transparent); }
+
+  .ticker-track {
+    display: flex; gap: 0; white-space: nowrap;
+    animation: tickerScroll 22s linear infinite;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .ticker-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 28px; font-family: 'Space Mono', monospace;
+    font-size: 12px; letter-spacing: 1px; color: var(--gold1);
+  }
+  .ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold2); flex-shrink: 0; }
+  .ticker-item a { color: var(--gold1); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Enhanced asset card */
+  .asset-card {
+    width: 100%; max-width: 500px;
+    background: linear-gradient(145deg, #0e0e14, #13131a);
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 12px;
+    position: relative; box-shadow: 0 0 0 1px rgba(200,162,0,0.25), 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .asset-card::before {
+    content: ''; position: absolute; inset: 0; border-radius: 14px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(200,162,0,0.5), transparent 50%, rgba(200,162,0,0.2));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+  }
+  .asset-card-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .asset-card-label {
+    font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--gold2); font-family: 'Space Mono', monospace;
+  }
+  .asset-count {
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px;
+    color: var(--muted); background: var(--surface2); border: 1px solid var(--border2);
+    padding: 3px 8px; border-radius: 20px;
+  }
+
+  /* Gold border glow on trigger */
+  .custom-select-trigger {
+    background: linear-gradient(135deg, #18181f, #12121a);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .custom-select-trigger:hover { border-color: rgba(200,162,0,0.5); box-shadow: 0 0 12px rgba(200,162,0,0.08), inset 0 1px 0 rgba(255,255,255,0.03); }
+  .custom-select-trigger.open { box-shadow: 0 0 20px rgba(200,162,0,0.12), inset 0 1px 0 rgba(255,255,255,0.03); }
+
+  #animChart { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0.18; }
+
+  @keyframes flashIn { 0% { opacity: 0; transform: translateY(8px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+  .flash { animation: flashIn 0.3s cubic-bezier(.22,1,.36,1); }
+</style>
+</head>
+<body>
+
+<canvas id="animChart"></canvas>
+
+<header>
+  <div class="logo-wrap">
+    <svg class="logo-svg" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="goldG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ffd700"/>
+          <stop offset="50%" stop-color="#c8a200"/>
+          <stop offset="100%" stop-color="#ffd700"/>
+        </linearGradient>
+        <linearGradient id="silverG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#e0e0e8"/>
+          <stop offset="50%" stop-color="#a0a0b0"/>
+          <stop offset="100%" stop-color="#e0e0e8"/>
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Crown -->
+      <g filter="url(#glow)">
+        <rect x="22" y="30" width="46" height="8" rx="2" fill="url(#goldG)"/>
+        <polygon points="22,30 28,14 35,24 45,10 55,24 62,14 68,30" fill="url(#goldG)"/>
+        <circle cx="45" cy="12" r="3" fill="#ff3d3d" opacity="0.9"/>
+        <circle cx="28" cy="16" r="2" fill="#00e676" opacity="0.8"/>
+        <circle cx="62" cy="16" r="2" fill="#29a8e9" opacity="0.8"/>
+      </g>
+      <!-- MX in hexagon -->
+      <g transform="translate(45,62)">
+        <polygon points="0,-22 19,-11 19,11 0,22 -19,11 -19,-11" fill="none" stroke="url(#goldG)" stroke-width="1.5"/>
+        <text x="0" y="7" text-anchor="middle" font-family="Rajdhani,sans-serif" font-weight="700" font-size="17" fill="url(#silverG)">MX</text>
+      </g>
+    </svg>
+  </div>
+  <div class="brand-name">MASUMX</div>
+  <div class="brand-sub">TRADE</div>
+  <div class="tagline">Learn &nbsp;|&nbsp; Practice &nbsp;|&nbsp; Profit</div>
+</header>
+
+<!-- Scrolling Ticker -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="tickerTrack">
+    <div class="ticker-item"><div class="ticker-dot"></div>🎓 ফ্রিতে ট্রেডিং কোর্স পাচ্ছেন — এখনই যোগ দিন!</div>
+    <div class="ticker-item"><div class="ticker-dot"></div>📈 ট্রেডিং শিখতে চাইলে আমাদের টেলিগ্রামে জয়েন করুন</div>
+    <div class="ticker-item"><div class="ticker-dot"></div>💰 প্রফেশনাল ট্রেডার হওয়ার সুযোগ — একদম বিনামূল্যে</div>
+    <div class="ticker-item"><div class="ticker-dot"></div>🚀 MASUMX TRADE — Learn | Practice | Profit</div>
+    <div class="ticker-item"><div class="ticker-dot"></div>🎓 ফ্রিতে ট্রেডিং কোর্স পাচ্ছেন — এখনই যোগ দিন!</div>
+    <div class="ticker-item"><div class="ticker-dot"></div>📈 ট্রেডিং শিখতে চাইলে আমাদের টেলিগ্রামে জয়েন করুন</div>
+    <div class="ticker-item"><div class="ticker-dot"></div>💰 প্রফেশনাল ট্রেডার হওয়ার সুযোগ — একদম বিনামূল্যে</div>
+    <div class="ticker-item"><div class="ticker-dot"></div>🚀 MASUMX TRADE — Learn | Practice | Profit</div>
+  </div>
+</div>
+
+<!-- Asset Selection -->
+<div class="asset-card">
+  <div class="asset-card-header">
+    <div class="asset-card-label">Select Asset</div>
+    <div class="asset-count">34 PAIRS</div>
+  </div>
+  <div class="custom-select-wrap" id="assetWrap">
+    <div class="custom-select-trigger" id="assetTrigger" onclick="toggleDD()">
+      <div class="cst-left">
+        <div class="asset-icon" id="trigIcon">FX</div>
+        <div class="cst-text">
+          <div class="cst-name" id="trigName">USD/EGP</div>
+          <div class="cst-badge">OTC MARKET</div>
+        </div>
+      </div>
+      <svg class="cst-arrow" width="14" height="8" viewBox="0 0 14 8" fill="none">
+        <path d="M1 1l6 6 6-6" stroke="#c8a200" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="custom-dropdown" id="assetDD">
+      <div class="dd-search"><input type="text" id="ddSearch" placeholder="SEARCH ASSET..." oninput="filterDD(this.value)"></div>
+
+      <div class="dd-group-label">— Forex Pairs</div>
+      <div class="dd-item selected" data-value="USD/EGP - OTC" data-abbr="EG" onclick="selectAsset(this)"><div class="dd-icon">EG</div><div class="dd-item-name">USD/EGP</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="GBP/AUD - OTC" data-abbr="GA" onclick="selectAsset(this)"><div class="dd-icon">GA</div><div class="dd-item-name">GBP/AUD</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="GBP/CHF - OTC" data-abbr="GC" onclick="selectAsset(this)"><div class="dd-icon">GC</div><div class="dd-item-name">GBP/CHF</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/MXN - OTC" data-abbr="MX" onclick="selectAsset(this)"><div class="dd-icon">MX</div><div class="dd-item-name">USD/MXN</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/PKR - OTC" data-abbr="PK" onclick="selectAsset(this)"><div class="dd-icon">PK</div><div class="dd-item-name">USD/PKR</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="BRL/USD - OTC" data-abbr="BR" onclick="selectAsset(this)"><div class="dd-icon">BR</div><div class="dd-item-name">BRL/USD</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/INR - OTC" data-abbr="IN" onclick="selectAsset(this)"><div class="dd-icon">IN</div><div class="dd-item-name">USD/INR</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/ARS - OTC" data-abbr="AR" onclick="selectAsset(this)"><div class="dd-icon">AR</div><div class="dd-item-name">USD/ARS</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/NGN - OTC" data-abbr="NG" onclick="selectAsset(this)"><div class="dd-icon">NG</div><div class="dd-item-name">USD/NGN</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/DZD - OTC" data-abbr="DZ" onclick="selectAsset(this)"><div class="dd-icon">DZ</div><div class="dd-item-name">USD/DZD</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/BRL - OTC" data-abbr="UB" onclick="selectAsset(this)"><div class="dd-icon">UB</div><div class="dd-item-name">USD/BRL</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="NZD/JPY - OTC" data-abbr="NJ" onclick="selectAsset(this)"><div class="dd-icon">NJ</div><div class="dd-item-name">NZD/JPY</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/COP - OTC" data-abbr="CP" onclick="selectAsset(this)"><div class="dd-icon">CP</div><div class="dd-item-name">USD/COP</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/PHP - OTC" data-abbr="PH" onclick="selectAsset(this)"><div class="dd-icon">PH</div><div class="dd-item-name">USD/PHP</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="NZD/USD - OTC" data-abbr="NU" onclick="selectAsset(this)"><div class="dd-icon">NU</div><div class="dd-item-name">NZD/USD</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="EUR/NZD - OTC" data-abbr="EN" onclick="selectAsset(this)"><div class="dd-icon">EN</div><div class="dd-item-name">EUR/NZD</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="NZD/CHF - OTC" data-abbr="NC" onclick="selectAsset(this)"><div class="dd-icon">NC</div><div class="dd-item-name">NZD/CHF</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="NZD/CAD - OTC" data-abbr="ND" onclick="selectAsset(this)"><div class="dd-icon">ND</div><div class="dd-item-name">NZD/CAD</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="USD/ZAR - OTC" data-abbr="ZR" onclick="selectAsset(this)"><div class="dd-icon">ZR</div><div class="dd-item-name">USD/ZAR</div><div class="dd-item-tag">OTC</div></div>
+
+      <div class="dd-group-label">— Commodities</div>
+      <div class="dd-item" data-value="USCrude - OTC" data-abbr="OIL" onclick="selectAsset(this)"><div class="dd-icon">OIL</div><div class="dd-item-name">USCrude</div><div class="dd-item-tag">OTC</div></div>
+
+      <div class="dd-group-label">— Stocks</div>
+      <div class="dd-item" data-value="FB - OTC" data-abbr="FB" onclick="selectAsset(this)"><div class="dd-icon">FB</div><div class="dd-item-name">FB</div><div class="dd-item-tag">OTC</div></div>
+
+      <div class="dd-group-label">— Crypto</div>
+      <div class="dd-item" data-value="Bitcoin - OTC" data-abbr="BTC" onclick="selectAsset(this)"><div class="dd-icon">BTC</div><div class="dd-item-name">Bitcoin</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Bitcoin Cash - OTC" data-abbr="BCH" onclick="selectAsset(this)"><div class="dd-icon">BCH</div><div class="dd-item-name">Bitcoin Cash</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Solana - OTC" data-abbr="SOL" onclick="selectAsset(this)"><div class="dd-icon">SOL</div><div class="dd-item-name">Solana</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Ripple - OTC" data-abbr="XRP" onclick="selectAsset(this)"><div class="dd-icon">XRP</div><div class="dd-item-name">Ripple</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Litecoin - OTC" data-abbr="LTC" onclick="selectAsset(this)"><div class="dd-icon">LTC</div><div class="dd-item-name">Litecoin</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Chainlink - OTC" data-abbr="LINK" onclick="selectAsset(this)"><div class="dd-icon">LINK</div><div class="dd-item-name">Chainlink</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Polkadot - OTC" data-abbr="DOT" onclick="selectAsset(this)"><div class="dd-icon">DOT</div><div class="dd-item-name">Polkadot</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Avalanche - OTC" data-abbr="AVAX" onclick="selectAsset(this)"><div class="dd-icon">AVAX</div><div class="dd-item-name">Avalanche</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Toncoin - OTC" data-abbr="TON" onclick="selectAsset(this)"><div class="dd-icon">TON</div><div class="dd-item-name">Toncoin</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Zcash - OTC" data-abbr="ZEC" onclick="selectAsset(this)"><div class="dd-icon">ZEC</div><div class="dd-item-name">Zcash</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Dash - OTC" data-abbr="DASH" onclick="selectAsset(this)"><div class="dd-icon">DASH</div><div class="dd-item-name">Dash</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Axie Infinity - OTC" data-abbr="AXS" onclick="selectAsset(this)"><div class="dd-icon">AXS</div><div class="dd-item-name">Axie Infinity</div><div class="dd-item-tag">OTC</div></div>
+      <div class="dd-item" data-value="Trump - OTC" data-abbr="TRP" onclick="selectAsset(this)"><div class="dd-icon">TRP</div><div class="dd-item-name">Trump</div><div class="dd-item-tag">OTC</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Expiry Time</div>
+  <div class="time-pills">
+    <div class="pill active" data-time="1 MIN" onclick="selectTime(this)">1 MIN</div>
+    <div class="pill" data-time="2 MIN" onclick="selectTime(this)">2 MIN</div>
+    <div class="pill" data-time="5 MIN" onclick="selectTime(this)">5 MIN</div>
+  </div>
+</div>
+
+<button class="btn-generate" id="genBtn" onclick="generate()">⚡ GET SIGNAL</button>
+
+<div class="cooldown-bar-wrap" id="cdWrap">
+  <div class="cooldown-text">Next signal in <span id="cdSec">120</span>s</div>
+  <div class="cooldown-track"><div class="cooldown-fill" id="cdFill"></div></div>
+</div>
+
+<div class="signal-result" id="result">
+  <div class="signal-direction" id="sigDir">CALL</div>
+  <div class="signal-arrow" id="sigArrow">▲</div>
+  <div class="signal-divider"></div>
+  <div class="signal-details">
+    <div class="detail-chip">Asset &nbsp;<span id="sigAsset">—</span></div>
+    <div class="detail-chip">Entry &nbsp;<span id="sigEntry">—</span></div>
+    <div class="detail-chip">Expiry &nbsp;<span id="sigTime">—</span></div>
+  </div>
+</div>
+
+<a class="btn-telegram" href="https://t.me/+ntXVM0RiIaE3YzE1" target="_blank" rel="noopener">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="#29a8e9"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.4 13.9l-2.93-.918c-.637-.2-.651-.637.136-.943l11.46-4.42c.53-.194.994.131.828.602z"/></svg>
+  Join Our Telegram Channel
+</a>
+
+<footer>
+  <span class="gold">MASUMX TRADE</span> &nbsp;·&nbsp; Official Telegram
+</footer>
+
+<script>
+  // Full background animated candlestick chart
+  const canvas = document.getElementById('animChart');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Candle data
+  const CANDLE_W = 14;
+  const GAP = 6;
+  const STEP = CANDLE_W + GAP;
+  let candles = [];
+  let price = 120;
+  let offset = 0; // scroll offset for animation
+
+  function newCandle() {
+    const open = price;
+    const move = (Math.random() - 0.48) * 8;
+    const close = open + move;
+    const high = Math.max(open, close) + Math.random() * 4;
+    const low = Math.min(open, close) - Math.random() * 4;
+    price = close;
+    return { open, close, high, low };
+  }
+
+  // Pre-fill candles
+  for (let i = 0; i < 120; i++) candles.push(newCandle());
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    const count = candles.length;
+    const visible = candles.slice(-Math.ceil(W / STEP) - 5);
+
+    // Find min/max for scaling
+    let minP = Infinity, maxP = -Infinity;
+    visible.forEach(c => { if (c.low < minP) minP = c.low; if (c.high > maxP) maxP = c.high; });
+    const range = maxP - minP || 1;
+    const pad = H * 0.1;
+    const scaleY = v => pad + (1 - (v - minP) / range) * (H - pad * 2);
+
+    // Faint grid
+    ctx.strokeStyle = 'rgba(200,162,0,0.12)';
+    ctx.lineWidth = 0.5;
+    for (let g = 0; g <= 5; g++) {
+      const y = pad + (g / 5) * (H - pad * 2);
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    for (let g = 0; g <= 8; g++) {
+      const x = (g / 8) * W;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+
+    // Draw candles, scrolling right to left
+    visible.forEach((c, i) => {
+      const x = W - (visible.length - i) * STEP + offset;
+      if (x < -STEP || x > W + STEP) return;
+
+      const isGreen = c.close >= c.open;
+      const color = isGreen ? '#00e676' : '#ff3d3d';
+
+      const oY = scaleY(c.open);
+      const cY = scaleY(c.close);
+      const hY = scaleY(c.high);
+      const lY = scaleY(c.low);
+
+      // Wick
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + CANDLE_W / 2, hY);
+      ctx.lineTo(x + CANDLE_W / 2, lY);
+      ctx.stroke();
+
+      // Body
+      const bodyTop = Math.min(oY, cY);
+      const bodyH = Math.max(Math.abs(oY - cY), 2);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, bodyTop, CANDLE_W, bodyH);
+    });
+
+    // Animate scroll
+    offset -= 0.4;
+    if (offset <= -STEP) {
+      offset += STEP;
+      candles.push(newCandle());
+      if (candles.length > 300) candles.shift();
+    }
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  let selectedAsset = 'USD/EGP - OTC';
+  let selectedTime = '1 MIN';
+  let cooldown = false;
+  let cdInterval = null;
+
+  // Custom dropdown logic
+  function toggleDD() {
+    const trigger = document.getElementById('assetTrigger');
+    const dd = document.getElementById('assetDD');
+    const isOpen = dd.classList.contains('open');
+    if (isOpen) { dd.classList.remove('open'); trigger.classList.remove('open'); }
+    else { dd.classList.add('open'); trigger.classList.add('open'); document.getElementById('ddSearch').focus(); }
+  }
+
+  document.addEventListener('click', e => {
+    if (!document.getElementById('assetWrap').contains(e.target)) {
+      document.getElementById('assetDD').classList.remove('open');
+      document.getElementById('assetTrigger').classList.remove('open');
+    }
+  });
+
+  function selectAsset(el) {
+    document.querySelectorAll('.dd-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedAsset = el.dataset.value;
+    const name = el.querySelector('.dd-item-name').textContent;
+    const abbr = el.dataset.abbr;
+    document.getElementById('trigName').textContent = name;
+    document.getElementById('trigIcon').textContent = abbr;
+    document.getElementById('assetDD').classList.remove('open');
+    document.getElementById('assetTrigger').classList.remove('open');
+    document.getElementById('ddSearch').value = '';
+    filterDD('');
+  }
+
+  function filterDD(q) {
+    const query = q.toLowerCase();
+    document.querySelectorAll('.dd-item').forEach(item => {
+      const name = item.querySelector('.dd-item-name').textContent.toLowerCase();
+      item.classList.toggle('hidden', query !== '' && !name.includes(query));
+    });
+    document.querySelectorAll('.dd-group-label').forEach(label => {
+      let next = label.nextElementSibling;
+      let allHidden = true;
+      while (next && !next.classList.contains('dd-group-label')) {
+        if (!next.classList.contains('hidden')) allHidden = false;
+        next = next.nextElementSibling;
+      }
+      label.style.display = allHidden ? 'none' : '';
+    });
+  }
+
+  function selectTime(el) {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    selectedTime = el.dataset.time;
+  }
+
+  function generate() {
+    if (cooldown) return;
+    const sig = ['CALL','PUT'][Math.floor(Math.random()*2)];
+    const isCall = sig === 'CALL';
+    const color = isCall ? '#00e676' : '#ff3d3d';
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 1);
+    const entry = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+    const result = document.getElementById('result');
+    result.style.setProperty('--signal-color', color);
+    result.style.display = 'flex';
+    result.classList.remove('flash');
+    void result.offsetWidth;
+    result.classList.add('flash');
+
+    document.getElementById('sigDir').textContent = sig;
+    document.getElementById('sigDir').style.color = color;
+    document.getElementById('sigArrow').textContent = isCall ? '▲' : '▼';
+    document.getElementById('sigArrow').style.color = color;
+    document.getElementById('sigAsset').textContent = selectedAsset.replace(' - OTC','');
+    document.getElementById('sigTime').textContent = selectedTime;
+    document.getElementById('sigEntry').textContent = entry;
+
+    cooldown = true;
+    document.getElementById('genBtn').disabled = true;
+    const cdWrap = document.getElementById('cdWrap');
+    const cdSec = document.getElementById('cdSec');
+    const cdFill = document.getElementById('cdFill');
+    cdWrap.style.display = 'flex';
+    cdSec.textContent = 120;
+    cdFill.style.width = '100%';
+    let rem = 120;
+    cdInterval = setInterval(() => {
+      rem--;
+      cdSec.textContent = rem;
+      cdFill.style.width = ((rem/120)*100)+'%';
+      if (rem <= 0) {
+        clearInterval(cdInterval);
+        cooldown = false;
+        document.getElementById('genBtn').disabled = false;
+        cdWrap.style.display = 'none';
+        cdFill.style.width = '100%';
+      }
+    }, 1000);
+  }
+</script>
+</body>
+</html>
