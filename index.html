@@ -640,13 +640,10 @@ function openTelegramApp(e){
 function saveLoginRecord(username) {
   const ua = navigator.userAgent;
   let device = '💻 Desktop';
-  let platform = '';
 
-  // Detect WebView (AppIlix / any app wrapper)
   const isWebView = /wv|WebView/i.test(ua) ||
-    ((/Android/i.test(ua)) && !/Chrome\/[.0-9]* Mobile/i.test(ua)) ||
-    (/iPhone|iPad/i.test(ua) && !/Safari/i.test(ua)) ||
-    typeof window.ReactNativeWebView !== 'undefined';
+    (/Android/i.test(ua) && !/Chrome\/[.0-9]* Mobile/i.test(ua)) ||
+    (/iPhone|iPad/i.test(ua) && !/Safari/i.test(ua));
 
   if (/Android/i.test(ua)) {
     device = isWebView ? '📲 Android App' : '📱 Android Browser';
@@ -658,8 +655,6 @@ function saveLoginRecord(username) {
     device = '💻 Windows';
   } else if (/Mac/i.test(ua)) {
     device = '💻 Mac';
-  } else if (/Linux/i.test(ua)) {
-    device = '💻 Linux';
   }
 
   const now = new Date();
@@ -669,11 +664,23 @@ function saveLoginRecord(username) {
     hour:'2-digit', minute:'2-digit'
   });
 
-  const record = { username, device, time, ua: ua.substring(0, 100) };
+  // Save locally
+  const record = { username, device, time };
   let logs = JSON.parse(localStorage.getItem('mx_login_logs') || '[]');
   logs.unshift(record);
-  if(logs.length > 100) logs = logs.slice(0, 100);
+  if(logs.length > 100) logs = logs.slice(0,100);
   localStorage.setItem('mx_login_logs', JSON.stringify(logs));
+
+  // Send Telegram notification directly
+  const BOT_TOKEN = '8787179376:AAEg1zbdqyRvU23e858vi8lsPueryUndhyI';
+  const CHAT_ID = '6760708348';
+  const msg = `🔐 *MASUMX TRADE Login*\n\n✅ *Status:* সফল লগইন\n👤 *User:* \`${username}\`\n📱 *Device:* ${device}\n🕐 *Time:* ${time}`;
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: 'Markdown' })
+  }).catch(()=>{});
 }
 
 // ── ADMIN PANEL ──
