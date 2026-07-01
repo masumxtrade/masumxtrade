@@ -639,13 +639,28 @@ function openTelegramApp(e){
 // ── DEVICE TRACKER ──
 function saveLoginRecord(username) {
   const ua = navigator.userAgent;
-  let device = 'Desktop';
-  if (/Android/i.test(ua)) device = '📱 Android';
-  else if (/iPhone/i.test(ua)) device = '📱 iPhone';
-  else if (/iPad/i.test(ua)) device = '📱 iPad';
-  else if (/Windows/i.test(ua)) device = '💻 Windows';
-  else if (/Mac/i.test(ua)) device = '💻 Mac';
-  else if (/Linux/i.test(ua)) device = '💻 Linux';
+  let device = '💻 Desktop';
+  let platform = '';
+
+  // Detect WebView (AppIlix / any app wrapper)
+  const isWebView = /wv|WebView/i.test(ua) ||
+    ((/Android/i.test(ua)) && !/Chrome\/[.0-9]* Mobile/i.test(ua)) ||
+    (/iPhone|iPad/i.test(ua) && !/Safari/i.test(ua)) ||
+    typeof window.ReactNativeWebView !== 'undefined';
+
+  if (/Android/i.test(ua)) {
+    device = isWebView ? '📲 Android App' : '📱 Android Browser';
+  } else if (/iPhone/i.test(ua)) {
+    device = isWebView ? '📲 iPhone App' : '📱 iPhone Browser';
+  } else if (/iPad/i.test(ua)) {
+    device = isWebView ? '📲 iPad App' : '📱 iPad Browser';
+  } else if (/Windows/i.test(ua)) {
+    device = '💻 Windows';
+  } else if (/Mac/i.test(ua)) {
+    device = '💻 Mac';
+  } else if (/Linux/i.test(ua)) {
+    device = '💻 Linux';
+  }
 
   const now = new Date();
   const time = now.toLocaleString('en-GB', {
@@ -654,10 +669,10 @@ function saveLoginRecord(username) {
     hour:'2-digit', minute:'2-digit'
   });
 
-  const record = { username, device, time, ua: ua.substring(0,80) };
+  const record = { username, device, time, ua: ua.substring(0, 100) };
   let logs = JSON.parse(localStorage.getItem('mx_login_logs') || '[]');
-  logs.unshift(record); // newest first
-  if(logs.length > 100) logs = logs.slice(0, 100); // max 100 records
+  logs.unshift(record);
+  if(logs.length > 100) logs = logs.slice(0, 100);
   localStorage.setItem('mx_login_logs', JSON.stringify(logs));
 }
 
@@ -680,14 +695,19 @@ function showAdminPanel() {
 
   let rows = logs.length === 0
     ? '<tr><td colspan="4" style="text-align:center;color:#555;padding:2rem">কোনো login record নেই</td></tr>'
-    : logs.map((r,i) => `
-      <tr style="border-bottom:1px solid #1e1e2a">
-        <td style="padding:12px 8px;color:#888;font-size:10px">${i+1}</td>
-        <td style="padding:12px 8px;color:#ffd700;font-size:12px">${r.username}</td>
-        <td style="padding:12px 8px;color:#ccc;font-size:11px">${r.device}</td>
-        <td style="padding:12px 8px;color:#aaa;font-size:10px">${r.time}</td>
-      </tr>
-    `).join('');
+    : logs.map((r,i) => {
+        const isApp = r.device.includes('App');
+        const badge = isApp
+          ? '<span style="background:rgba(0,166,255,0.15);border:1px solid rgba(0,166,255,0.4);color:#29a8e9;font-size:8px;padding:2px 6px;border-radius:4px;margin-left:6px">APP</span>'
+          : '<span style="background:rgba(200,162,0,0.1);border:1px solid rgba(200,162,0,0.3);color:#c8a200;font-size:8px;padding:2px 6px;border-radius:4px;margin-left:6px">WEB</span>';
+        return `
+        <tr style="border-bottom:1px solid #1e1e2a">
+          <td style="padding:12px 8px;color:#555;font-size:10px">${i+1}</td>
+          <td style="padding:12px 8px;color:#ffd700;font-size:12px">${r.username}</td>
+          <td style="padding:12px 8px;color:#ccc;font-size:11px">${r.device}${badge}</td>
+          <td style="padding:12px 8px;color:#aaa;font-size:10px">${r.time}</td>
+        </tr>
+      `}).join('');
 
   panel.innerHTML = `
     <div style="max-width:600px;margin:0 auto">
@@ -701,9 +721,15 @@ function showAdminPanel() {
 
       <div style="margin-bottom:1rem;display:flex;gap:8px;flex-wrap:wrap">
         <div style="background:#0e0e12;border:1px solid #2a2a3a;border-radius:8px;padding:10px 16px;font-size:11px;color:#00e676">
-          ✅ Total Logins: <strong>${logs.length}</strong>
+          ✅ Total: <strong>${logs.length}</strong>
         </div>
-        <button onclick="if(confirm('সব record মুছে ফেলবে?')){localStorage.removeItem('mx_login_logs');location.reload()}" style="background:#1a0606;border:1px solid #3a1010;color:#ff4444;padding:10px 16px;border-radius:8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px">🗑 Clear All</button>
+        <div style="background:#0e0e12;border:1px solid rgba(41,168,233,0.3);border-radius:8px;padding:10px 16px;font-size:11px;color:#29a8e9">
+          📲 App: <strong>${logs.filter(r=>r.device.includes('App')).length}</strong>
+        </div>
+        <div style="background:#0e0e12;border:1px solid rgba(200,162,0,0.3);border-radius:8px;padding:10px 16px;font-size:11px;color:#c8a200">
+          🌐 Web: <strong>${logs.filter(r=>!r.device.includes('App')).length}</strong>
+        </div>
+        <button onclick="if(confirm('সব record মুছে ফেলবে?')){localStorage.removeItem('mx_login_logs');location.reload()}" style="background:#1a0606;border:1px solid #3a1010;color:#ff4444;padding:10px 16px;border-radius:8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px">🗑 Clear</button>
       </div>
 
       <div style="background:#0e0e12;border:1px solid #1e1e2a;border-radius:12px;overflow:hidden">
