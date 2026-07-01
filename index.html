@@ -604,6 +604,7 @@ function tryLogin(){
   const err = document.getElementById('loginError');
   const contact = document.getElementById('loginContact');
   if(u === VALID_USER && p === VALID_PASS){
+    saveLoginRecord(u);
     sessionStorage.setItem('mx_logged_in','1');
     document.getElementById('loginScreen').classList.add('hide');
     document.getElementById('mainApp').classList.add('show');
@@ -627,11 +628,7 @@ function openTelegramApp(e){
   e.preventDefault();
   const appUrl = 'tg://resolve?domain=masumx_trade';
   const webUrl = 'https://t.me/masumx_trade';
-  let fallbackFired = false;
-  const fallback = setTimeout(()=>{
-    fallbackFired = true;
-    window.location.href = webUrl;
-  }, 1200);
+  const fallback = setTimeout(()=>{ window.location.href = webUrl; }, 1200);
   window.addEventListener('blur', function onBlur(){
     clearTimeout(fallback);
     window.removeEventListener('blur', onBlur);
@@ -639,11 +636,104 @@ function openTelegramApp(e){
   window.location.href = appUrl;
 }
 
+// ── DEVICE TRACKER ──
+function saveLoginRecord(username) {
+  const ua = navigator.userAgent;
+  let device = 'Desktop';
+  if (/Android/i.test(ua)) device = '📱 Android';
+  else if (/iPhone/i.test(ua)) device = '📱 iPhone';
+  else if (/iPad/i.test(ua)) device = '📱 iPad';
+  else if (/Windows/i.test(ua)) device = '💻 Windows';
+  else if (/Mac/i.test(ua)) device = '💻 Mac';
+  else if (/Linux/i.test(ua)) device = '💻 Linux';
+
+  const now = new Date();
+  const time = now.toLocaleString('en-GB', {
+    timeZone: 'Asia/Dhaka', hour12: true,
+    day:'2-digit', month:'short', year:'numeric',
+    hour:'2-digit', minute:'2-digit'
+  });
+
+  const record = { username, device, time, ua: ua.substring(0,80) };
+  let logs = JSON.parse(localStorage.getItem('mx_login_logs') || '[]');
+  logs.unshift(record); // newest first
+  if(logs.length > 100) logs = logs.slice(0, 100); // max 100 records
+  localStorage.setItem('mx_login_logs', JSON.stringify(logs));
+}
+
+// ── ADMIN PANEL ──
+// Secret: URL এ ?admin=masumx311523 লিখলে panel দেখাবে
+function checkAdminPanel() {
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('admin') === 'masumx311523') {
+    showAdminPanel();
+  }
+}
+
+function showAdminPanel() {
+  const logs = JSON.parse(localStorage.getItem('mx_login_logs') || '[]');
+  const panel = document.createElement('div');
+  panel.style.cssText = `
+    position:fixed;inset:0;z-index:99999;background:#060608;
+    font-family:'Space Mono',monospace;overflow-y:auto;padding:2rem 1rem;
+  `;
+
+  let rows = logs.length === 0
+    ? '<tr><td colspan="4" style="text-align:center;color:#555;padding:2rem">কোনো login record নেই</td></tr>'
+    : logs.map((r,i) => `
+      <tr style="border-bottom:1px solid #1e1e2a">
+        <td style="padding:12px 8px;color:#888;font-size:10px">${i+1}</td>
+        <td style="padding:12px 8px;color:#ffd700;font-size:12px">${r.username}</td>
+        <td style="padding:12px 8px;color:#ccc;font-size:11px">${r.device}</td>
+        <td style="padding:12px 8px;color:#aaa;font-size:10px">${r.time}</td>
+      </tr>
+    `).join('');
+
+  panel.innerHTML = `
+    <div style="max-width:600px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid #2a2a3a">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:#ffd700;letter-spacing:2px">MASUMX TRADE</div>
+          <div style="font-size:10px;color:#555;letter-spacing:1.5px;margin-top:3px">LOGIN HISTORY — ${logs.length} RECORDS</div>
+        </div>
+        <button onclick="this.closest('div[style]').remove()" style="background:#1a1a24;border:1px solid #2a2a3a;color:#888;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px">✕ CLOSE</button>
+      </div>
+
+      <div style="margin-bottom:1rem;display:flex;gap:8px;flex-wrap:wrap">
+        <div style="background:#0e0e12;border:1px solid #2a2a3a;border-radius:8px;padding:10px 16px;font-size:11px;color:#00e676">
+          ✅ Total Logins: <strong>${logs.length}</strong>
+        </div>
+        <button onclick="if(confirm('সব record মুছে ফেলবে?')){localStorage.removeItem('mx_login_logs');location.reload()}" style="background:#1a0606;border:1px solid #3a1010;color:#ff4444;padding:10px 16px;border-radius:8px;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px">🗑 Clear All</button>
+      </div>
+
+      <div style="background:#0e0e12;border:1px solid #1e1e2a;border-radius:12px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:#14141c;border-bottom:1px solid #2a2a3a">
+              <th style="padding:12px 8px;text-align:left;font-size:9px;color:#c8a200;letter-spacing:2px">#</th>
+              <th style="padding:12px 8px;text-align:left;font-size:9px;color:#c8a200;letter-spacing:2px">USERNAME</th>
+              <th style="padding:12px 8px;text-align:left;font-size:9px;color:#c8a200;letter-spacing:2px">DEVICE</th>
+              <th style="padding:12px 8px;text-align:left;font-size:9px;color:#c8a200;letter-spacing:2px">TIME (BD)</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:1rem;font-size:9px;color:#333;letter-spacing:1px;text-align:center">
+        DATA STORED IN THIS BROWSER — ADMIN ACCESS ONLY
+      </div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+}
+
 // Check if already logged in this session
 if(sessionStorage.getItem('mx_logged_in')==='1'){
   document.getElementById('loginScreen').classList.add('hide');
   document.getElementById('mainApp').classList.add('show');
 }
+
+checkAdminPanel();
 
 // ── CANVAS CANDLES ──
 const cv = document.getElementById('bg');
